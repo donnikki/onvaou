@@ -1,25 +1,32 @@
 {
   "expo": {
     "name": "Biel",
-    "slug": "Biel",
+    "slug": "biel",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "biel",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.nicode.biel",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Biel verwendet deinen Standort, um dir Angebote und Shops in deiner Naehe anzuzeigen.",
+        "NSCameraUsageDescription": "Biel verwendet die Kamera, damit du spaeter Quittungen scannen kannst.",
+        "NSPhotoLibraryUsageDescription": "Biel verwendet Fotos, damit du spaeter Quittungen oder Shop-Bilder auswaehlen kannst."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.nicode.biel"
     },
     "web": {
       "output": "static",
@@ -33,15 +40,14 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "backgroundColor": "#FFFFFF"
         }
-      ]
+      ],
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
-      "typedRoutes": true,
+      "typedRoutes": false,
       "reactCompiler": true
     }
   }
