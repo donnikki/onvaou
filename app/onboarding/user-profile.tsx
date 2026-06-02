@@ -18,6 +18,7 @@ const toIsoDate = (date: Date) => date.toISOString().slice(0, 10);
 
 export default function UserProfileOnboardingScreen() {
   const createUserProfile = useAuthStore((state) => state.createUserProfile);
+  const findSavedUserByEmail = useAuthStore((state) => state.findSavedUserByEmail);
 
   const [birthDateValue, setBirthDateValue] = useState(new Date(1995, 0, 1));
   const [showAndroidDatePicker, setShowAndroidDatePicker] = useState(false);
@@ -40,8 +41,12 @@ export default function UserProfileOnboardingScreen() {
       next.birthDate = 'Bitte nutze ein gueltiges Datum (YYYY-MM-DD).';
     }
 
-    if (form.email.trim().length > 0 && !isValidEmail(form.email)) {
+    if (!isRequired(form.email)) {
+      next.email = 'Bitte gib deine E-Mail ein.';
+    } else if (!isValidEmail(form.email)) {
       next.email = 'Bitte gib eine gueltige E-Mail ein.';
+    } else if (findSavedUserByEmail(form.email)) {
+      next.email = 'Auf diesem iPhone gibt es bereits ein Konto mit dieser E-Mail.';
     }
 
     if (form.phone.trim().length > 0 && !isValidPhone(form.phone)) {
@@ -49,7 +54,7 @@ export default function UserProfileOnboardingScreen() {
     }
 
     return next;
-  }, [form]);
+  }, [findSavedUserByEmail, form]);
 
   const currentStep = steps[stepIndex];
   const currentError = errors[currentStep];
@@ -147,6 +152,7 @@ export default function UserProfileOnboardingScreen() {
               <View style={styles.group}>
                 <AppInput
                   label="E-Mail"
+                  required
                   value={form.email}
                   onChangeText={(value) => setForm((old) => ({ ...old, email: value }))}
                   placeholder="du@beispiel.ch"
@@ -154,7 +160,7 @@ export default function UserProfileOnboardingScreen() {
                   autoCapitalize="none"
                   error={errors.email}
                 />
-                <Text style={styles.hint}>Optional. Du kannst diesen Schritt vorerst ueberspringen.</Text>
+                <Text style={styles.hint}>Diese E-Mail brauchst du spaeter fuer den Login auf diesem iPhone.</Text>
               </View>
             ) : null}
 

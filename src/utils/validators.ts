@@ -1,16 +1,4 @@
-import { ShopCategory } from '@/src/types';
-
-export const categoryList: ShopCategory[] = [
-  'Café',
-  'Restaurant',
-  'Bar',
-  'Club',
-  'Coiffeur',
-  'Supermarkt',
-  'Event',
-  'Dienstleistung',
-  'Sonstiges',
-];
+export { categoryList } from '@/src/utils/shopCategories';
 
 const phoneRegex = /^[0-9+()\-\s]{8,20}$/;
 

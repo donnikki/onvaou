@@ -7,26 +7,43 @@ import { AppButton } from '@/src/components/ui/AppButton';
 import { AppCard } from '@/src/components/ui/AppCard';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { Screen } from '@/src/components/ui/Screen';
-import { offerService } from '@/src/services/offerService';
+import { useOfferStore } from '@/src/store/offerStore';
 import { useShopStore } from '@/src/store/shopStore';
 import { colors, spacing, typography } from '@/src/theme';
 import { formatDateCH } from '@/src/utils/date';
-import { getOfferBadgeLabel, getOfferConditionLabel, getOfferRewardLabel } from '@/src/utils/offers';
+import { getOfferBadgeLabel, getOfferConditionLabel, getOfferPromotionLabel, getOfferPromotionPriority, getOfferRewardLabel } from '@/src/utils/offers';
 
 const filters = ['Alle', 'Kategorie', 'In der Naehe', 'Laeuft bald ab', 'Neue Deals', 'Beliebt'] as const;
 
 export default function DealsScreen() {
   const [filter, setFilter] = useState<(typeof filters)[number]>('Alle');
   const shops = useShopStore((state) => state.shops);
+  const offers = useOfferStore((state) => state.offers);
 
   const deals = useMemo(() => {
-    const active = offerService.getActive();
+    const active = offers.filter((offer) => offer.status === 'active');
+    const sortedByPromotion = [...active].sort((left, right) => {
+      const promotionDelta = getOfferPromotionPriority(right) - getOfferPromotionPriority(left);
+      if (promotionDelta !== 0) {
+        return promotionDelta;
+      }
+
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    });
+
     if (filter === 'Laeuft bald ab') {
-      return [...active].sort((a, b) => new Date(a.validUntil).getTime() - new Date(b.validUntil).getTime());
+      return sortedByPromotion.sort((left, right) => {
+        const promotionDelta = getOfferPromotionPriority(right) - getOfferPromotionPriority(left);
+        if (promotionDelta !== 0) {
+          return promotionDelta;
+        }
+
+        return new Date(left.validUntil).getTime() - new Date(right.validUntil).getTime();
+      });
     }
 
-    return active;
-  }, [filter]);
+    return sortedByPromotion;
+  }, [filter, offers]);
 
   return (
     <Screen>
@@ -62,6 +79,7 @@ export default function DealsScreen() {
               <Text style={styles.description}>{deal.description}</Text>
               {getOfferRewardLabel(deal) ? <Text style={styles.meta}>{getOfferRewardLabel(deal)}</Text> : null}
               {getOfferConditionLabel(deal) ? <Text style={styles.meta}>{getOfferConditionLabel(deal)}</Text> : null}
+              {getOfferPromotionLabel(deal) ? <Text style={styles.promoMeta}>{getOfferPromotionLabel(deal)}</Text> : null}
               <Text style={styles.validUntil}>Gueltig bis {formatDateCH(deal.validUntil)}</Text>
               <AppButton label="Ansehen" variant="secondary" onPress={() => router.push(`/shop-detail/${shop.id}`)} />
             </AppCard>
@@ -135,6 +153,11 @@ const styles = StyleSheet.create({
   meta: {
     color: colors.textMuted,
     fontFamily: typography.family.medium,
+    fontSize: typography.size.sm,
+  },
+  promoMeta: {
+    color: colors.primaryRed,
+    fontFamily: typography.family.semibold,
     fontSize: typography.size.sm,
   },
 });

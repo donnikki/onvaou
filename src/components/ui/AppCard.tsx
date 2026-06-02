@@ -1,10 +1,10 @@
 import { PropsWithChildren } from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 import { colors, shadows, spacing } from '@/src/theme';
 
 type AppCardProps = PropsWithChildren<{
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }>;
 
 export const AppCard = ({ children, style }: AppCardProps) => {

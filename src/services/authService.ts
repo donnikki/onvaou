@@ -1,42 +1,46 @@
 import { mockUsers } from '@/src/data/mockUsers';
 import { AppRole, UserProfile } from '@/src/types';
+import { syncAppUserProfile } from '@/src/services/supabase/appUserSync';
 
 const nowIso = () => new Date().toISOString();
 const buildQrCodeValue = (userId: string) => `BIEL-${userId}`;
 
 let users = [...mockUsers];
+let localUsers: UserProfile[] = [];
+
+const getAllKnownUsers = () => {
+  const merged = new Map<string, UserProfile>();
+
+  [...users, ...localUsers].forEach((entry) => {
+    merged.set(entry.id, {
+      ...entry,
+      qrCodeValue: entry.qrCodeValue ?? buildQrCodeValue(entry.id),
+    });
+  });
+
+  return Array.from(merged.values());
+};
 
 export const authService = {
   buildQrCodeValue,
 
+  setLocalUsers(nextUsers: UserProfile[]) {
+    localUsers = nextUsers.map((entry) => ({
+      ...entry,
+      qrCodeValue: entry.qrCodeValue ?? buildQrCodeValue(entry.id),
+    }));
+  },
+
   getById(userId: string) {
-    const user = users.find((entry) => entry.id === userId) ?? null;
-    return user
-      ? {
-          ...user,
-          qrCodeValue: user.qrCodeValue ?? buildQrCodeValue(user.id),
-        }
-      : null;
+    return getAllKnownUsers().find((entry) => entry.id === userId) ?? null;
   },
 
   getByEmail(email: string) {
-    const user = users.find((entry) => entry.email.toLowerCase() === email.toLowerCase()) ?? null;
-    return user
-      ? {
-          ...user,
-          qrCodeValue: user.qrCodeValue ?? buildQrCodeValue(user.id),
-        }
-      : null;
+    return getAllKnownUsers().find((entry) => entry.email.toLowerCase() === email.toLowerCase()) ?? null;
   },
 
   getByQrCode(qrCodeValue: string) {
-    const user = users.find((entry) => (entry.qrCodeValue ?? buildQrCodeValue(entry.id)) === qrCodeValue) ?? null;
-    return user
-      ? {
-          ...user,
-          qrCodeValue: user.qrCodeValue ?? buildQrCodeValue(user.id),
-        }
-      : null;
+    return getAllKnownUsers().find((entry) => (entry.qrCodeValue ?? buildQrCodeValue(entry.id)) === qrCodeValue) ?? null;
   },
 
   createUserProfile(input: Pick<UserProfile, 'name' | 'birthDate' | 'email' | 'phone'>): UserProfile {
@@ -55,7 +59,8 @@ export const authService = {
       status: 'active',
     };
 
-    users = [user, ...users];
+    localUsers = [user, ...localUsers];
+    void syncAppUserProfile(user);
     return user;
   },
 
@@ -69,19 +74,34 @@ export const authService = {
           }
         : user,
     );
+    localUsers = localUsers.map((user) =>
+      user.id === userId
+        ? {
+            ...user,
+            role,
+            updatedAt: nowIso(),
+          }
+        : user,
+    );
 
     return this.getById(userId);
   },
 
   getAllUsers() {
-    return users.map((user) => ({
-      ...user,
-      qrCodeValue: user.qrCodeValue ?? buildQrCodeValue(user.id),
-    }));
+    return getAllKnownUsers();
   },
 
   updateUserStatus(userId: string, status: 'active' | 'blocked') {
     users = users.map((user) =>
+      user.id === userId
+        ? {
+            ...user,
+            status,
+            updatedAt: nowIso(),
+          }
+        : user,
+    );
+    localUsers = localUsers.map((user) =>
       user.id === userId
         ? {
             ...user,
@@ -96,6 +116,15 @@ export const authService = {
 
   adjustPoints(userId: string, delta: number) {
     users = users.map((user) =>
+      user.id === userId
+        ? {
+            ...user,
+            pointsBalance: Math.max(0, user.pointsBalance + delta),
+            updatedAt: nowIso(),
+          }
+        : user,
+    );
+    localUsers = localUsers.map((user) =>
       user.id === userId
         ? {
             ...user,
@@ -121,6 +150,15 @@ export const authService = {
           }
         : user,
     );
+    localUsers = localUsers.map((user) =>
+      user.id === userId
+        ? {
+            ...user,
+            ...updates,
+            updatedAt: nowIso(),
+          }
+        : user,
+    );
 
     return this.getById(userId);
   },
@@ -128,6 +166,7 @@ export const authService = {
   deleteUser(userId: string) {
     const exists = users.some((user) => user.id === userId);
     users = users.filter((user) => user.id !== userId);
+    localUsers = localUsers.filter((user) => user.id !== userId);
     return exists;
   },
 };

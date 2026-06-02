@@ -65,3 +65,41 @@ export const getOfferRewardLabel = (offer: OfferLike | ActionTemplate) => {
 
   return null;
 };
+
+export const getOfferPromotionLabel = (offer: Pick<Offer, 'promotion'>) => {
+  const promotion = offer.promotion;
+
+  if (!promotion) {
+    return null;
+  }
+
+  if (promotion.notificationBlast && promotion.featuredPlacement) {
+    return `Promotion: Push an alle Nutzer + Top Platzierung`;
+  }
+
+  if (promotion.notificationBlast) {
+    return `Promotion: Push an alle Nutzer`;
+  }
+
+  if (promotion.featuredPlacement) {
+    return `Promotion: Top Platzierung in Deals`;
+  }
+
+  return null;
+};
+
+export const getOfferPromotionPriority = (offer: Pick<Offer, 'promotion'>) => {
+  if (offer.promotion?.featuredPlacement && offer.promotion?.notificationBlast) {
+    return 3;
+  }
+
+  if (offer.promotion?.featuredPlacement) {
+    return 2;
+  }
+
+  if (offer.promotion?.notificationBlast) {
+    return 1;
+  }
+
+  return 0;
+};

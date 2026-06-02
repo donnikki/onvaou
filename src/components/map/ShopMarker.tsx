@@ -24,8 +24,15 @@ export const ShopMarker = ({
     coordinate={{ latitude: shop.latitude, longitude: shop.longitude }}
     onPress={onPress}
     identifier={shop.id}>
-    <View style={[styles.marker, highlighted && styles.markerHighlighted]}>
-      <CategoryIcon icon={shop.mapIcon} size={16} color={highlighted ? '#FFFFFF' : colors.primaryRed} />
+    <View style={styles.markerWrap}>
+      <View style={[styles.iconShadow, highlighted && styles.iconShadowHighlighted]}>
+        <CategoryIcon icon={shop.mapIcon} size={46} />
+      </View>
+      <View style={styles.labelWrap}>
+        <Text numberOfLines={1} style={styles.label}>
+          {shop.name}
+        </Text>
+      </View>
     </View>
     {showDealBadge ? (
       <View style={styles.dealBadge}>
@@ -36,18 +43,36 @@ export const ShopMarker = ({
 );
 
 const styles = StyleSheet.create({
-  marker: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: colors.primaryRed,
+  markerWrap: {
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  markerHighlighted: {
-    backgroundColor: colors.primaryRed,
+  iconShadow: {
+    borderRadius: 999,
+    shadowColor: '#171717',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  iconShadowHighlighted: {
+    shadowOpacity: 0.2,
+  },
+  labelWrap: {
+    marginTop: 4,
+    maxWidth: 96,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  label: {
+    color: colors.text,
+    fontFamily: typography.family.medium,
+    fontSize: 11,
+    lineHeight: 14,
+    textAlign: 'center',
   },
   dealBadge: {
     position: 'absolute',

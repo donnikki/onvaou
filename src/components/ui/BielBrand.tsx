@@ -1,6 +1,5 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
-
-import { CategoryIcon } from '@/src/components/ui/CategoryIcon';
 import { colors, spacing, typography } from '@/src/theme';
 
 type BielBrandProps = {
@@ -11,8 +10,8 @@ type BielBrandProps = {
 export const BielBrand = ({ titleSize = 44, centered = true }: BielBrandProps) => (
   <View style={[styles.wrap, centered && styles.centered]}>
     <View style={styles.shield}>
-      <CategoryIcon icon="scissors" size={16} color="#FFFFFF" />
-      <CategoryIcon icon="scissors" size={16} color="#FFFFFF" style={styles.crossIcon} />
+      <MaterialCommunityIcons name="content-cut" size={16} color="#FFFFFF" />
+      <MaterialCommunityIcons name="content-cut" size={16} color="#FFFFFF" style={styles.crossIcon} />
     </View>
     <Text style={[styles.title, { fontSize: titleSize }]}>Biel</Text>
   </View>

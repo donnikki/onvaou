@@ -7,11 +7,10 @@ import { AppCard } from '@/src/components/ui/AppCard';
 import { Screen } from '@/src/components/ui/Screen';
 import { useAuthStore } from '@/src/store/authStore';
 import { colors, spacing, typography } from '@/src/theme';
-import { goToAdminLogin, goToRoleSelection as navigateToRoleSelection } from '@/src/utils/navigation';
+import { goToAdminLogin, resetToRoleSelection } from '@/src/utils/navigation';
 
 export default function AdminDashboardScreen() {
   const user = useAuthStore((state) => state.currentUser);
-  const resetRoleSelection = useAuthStore((state) => state.goToRoleSelection);
   const isImpersonating = useAuthStore((state) => state.isImpersonating);
 
   useEffect(() => {
@@ -32,10 +31,7 @@ export default function AdminDashboardScreen() {
         <AppButton
           label="Zur Profil-Wahl"
           variant="ghost"
-          onPress={() => {
-            resetRoleSelection();
-            navigateToRoleSelection();
-          }}
+          onPress={resetToRoleSelection}
         />
         <AppButton label="User verwalten" onPress={() => router.push('/admin/users')} />
         <AppButton label="Shops verwalten" variant="secondary" onPress={() => router.push('/admin/shops')} />

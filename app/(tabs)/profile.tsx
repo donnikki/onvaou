@@ -1,24 +1,30 @@
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppBadge } from '@/src/components/ui/AppBadge';
 import { AppButton } from '@/src/components/ui/AppButton';
 import { AppCard } from '@/src/components/ui/AppCard';
 import { Screen } from '@/src/components/ui/Screen';
+import { UserCompletedActionsCard } from '@/src/components/user/UserCompletedActionsCard';
 import { useAuthStore } from '@/src/store/authStore';
 import { useAppStore } from '@/src/store/appStore';
 import { colors, spacing, typography } from '@/src/theme';
 import { formatDateCH } from '@/src/utils/date';
-import {
-  goToRoleSelection as navigateToRoleSelection,
-  goToWelcome,
-  returnToAdminDashboard,
-} from '@/src/utils/navigation';
+import { resetToRoleSelection } from '@/src/utils/navigation';
 
 export default function ProfileScreen() {
-  const { currentUser, logout, shopSubscriptionStatus, goToRoleSelection, isImpersonating, returnToAdmin } =
-    useAuthStore();
+  const { currentUser, logout } = useAuthStore();
   const favoriteShopIds = useAppStore((state) => state.favoriteShopIds);
+  const [, setRefreshKey] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Ensure service-backed "history" lists re-render when returning to this tab.
+      setRefreshKey((value) => value + 1);
+    }, []),
+  );
 
   if (!currentUser) {
     return (
@@ -26,7 +32,36 @@ export default function ProfileScreen() {
         <Text style={styles.heading}>Profil</Text>
         <AppCard style={styles.card}>
           <Text style={styles.value}>Du nutzt die App aktuell als Gast.</Text>
-          <AppButton label="Onboarding starten" onPress={() => goToWelcome()} />
+          <AppButton label="Login oder Sign up" onPress={resetToRoleSelection} />
+          <AppButton label="Hilfe & Erklaerung" variant="secondary" onPress={() => router.push('/help')} />
+        </AppCard>
+      </Screen>
+    );
+  }
+
+  if (currentUser.role !== 'user') {
+    const portalRole = currentUser.role === 'admin' ? 'admin' : 'shop';
+
+    return (
+      <Screen>
+        <Text style={styles.heading}>Profil</Text>
+
+        <AppCard style={styles.card}>
+          <Text style={styles.testModeTitle}>Nur noch fuer Nutzer</Text>
+          <Text style={styles.hint}>Shop- und Admin-Profile werden jetzt ausschliesslich im Webportal verwaltet.</Text>
+          <AppButton
+            label={portalRole === 'admin' ? 'Admin Webportal' : 'Shop Webportal'}
+            onPress={() => router.push(`/portal-access?role=${portalRole}`)}
+          />
+          <AppButton label="Zur Nutzer-Auswahl" variant="secondary" onPress={resetToRoleSelection} />
+          <AppButton
+            label="Logout"
+            variant="ghost"
+            onPress={() => {
+              logout();
+              resetToRoleSelection();
+            }}
+          />
         </AppCard>
       </Screen>
     );
@@ -35,23 +70,6 @@ export default function ProfileScreen() {
   return (
     <Screen>
       <Text style={styles.heading}>Profil</Text>
-
-      {isImpersonating ? (
-        <AppCard style={styles.card}>
-          <Text style={styles.testModeTitle}>Testmodus aktiv</Text>
-          <Text style={styles.hint}>Du simulierst aktuell ein anderes Profil.</Text>
-          <AppButton
-            label="Zurueck als Admin"
-            variant="secondary"
-            onPress={() => {
-              const restored = returnToAdmin();
-              if (restored) {
-                returnToAdminDashboard();
-              }
-            }}
-          />
-        </AppCard>
-      ) : null}
 
       <AppCard style={styles.card}>
         <Text style={styles.label}>Name</Text>
@@ -73,36 +91,20 @@ export default function ProfileScreen() {
         <Text style={styles.hint}>Quittungen scannen und Punkte sammeln wird bald verfuegbar.</Text>
       </AppCard>
 
-      {currentUser.role === 'shop_active' || currentUser.role === 'shop_expired' ? (
-        <AppCard style={styles.card}>
-          <Text style={styles.label}>Shop-Abo Status</Text>
-          <Text style={styles.value}>{shopSubscriptionStatus}</Text>
-          <AppButton label="Zum Shop-Dashboard" onPress={() => router.push('/shop/dashboard')} />
-          <AppButton label="Shop-Profil bearbeiten" variant="secondary" onPress={() => router.push('/shop/edit-profile')} />
-        </AppCard>
+      {currentUser.role === 'user' ? (
+        <UserCompletedActionsCard userId={currentUser.id} />
       ) : null}
 
-      {currentUser.role === 'admin' ? (
-        <AppCard style={styles.card}>
-          <AppButton label="Zum Admin-Dashboard" onPress={() => router.push('/admin/dashboard')} />
-        </AppCard>
-      ) : null}
-
-      <AppButton
-        label="Zur Profil-Wahl"
-        variant="secondary"
-        onPress={() => {
-          goToRoleSelection();
-          navigateToRoleSelection();
-        }}
-      />
+      <AppCard style={styles.card}>
+        <AppButton label="Hilfe & Erklaerung" variant="secondary" onPress={() => router.push('/help')} />
+      </AppCard>
 
       <AppButton
         label="Logout"
         variant="ghost"
         onPress={() => {
           logout();
-          goToWelcome();
+          resetToRoleSelection();
         }}
       />
     </Screen>

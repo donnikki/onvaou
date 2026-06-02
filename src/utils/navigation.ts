@@ -1,27 +1,34 @@
 import { router } from 'expo-router';
 
+import { useAuthStore } from '@/src/store/authStore';
+
 export const finishUserOnboarding = () => {
   router.push('/(tabs)/discover');
 };
 
 export const finishShopSetup = () => {
-  router.push('/shop/dashboard');
+  router.push('/portal-access?role=shop');
 };
 
 export const finishAdminLogin = () => {
-  router.push('/admin/dashboard');
+  router.push('/portal-access?role=admin');
 };
 
 export const goToAdminLogin = () => {
-  router.push('/onboarding/admin-login');
+  router.push('/portal-access?role=admin');
 };
 
 export const goToRoleSelection = () => {
   router.push('/onboarding/role-select');
 };
 
+export const resetToRoleSelection = () => {
+  useAuthStore.getState().goToRoleSelection();
+  router.replace('/onboarding/role-select');
+};
+
 export const goToWelcome = () => {
-  router.push('/onboarding/welcome');
+  router.push('/onboarding/role-select');
 };
 
 export const startImpersonatedUserSession = () => {
@@ -29,9 +36,9 @@ export const startImpersonatedUserSession = () => {
 };
 
 export const startImpersonatedShopSession = () => {
-  router.push('/shop/dashboard');
+  router.push('/portal-access?role=shop');
 };
 
 export const returnToAdminDashboard = () => {
-  router.push('/admin/dashboard');
+  router.push('/portal-access?role=admin');
 };

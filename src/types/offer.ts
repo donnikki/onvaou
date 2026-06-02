@@ -14,6 +14,16 @@ export type OfferType =
 
 export type OfferStatus = 'pending_shop' | 'active' | 'declined' | 'paused' | 'expired';
 
+export type OfferPromotionType = 'none' | 'notification_blast' | 'featured_placement' | 'premium_boost';
+
+export type OfferPromotion = {
+  type: OfferPromotionType;
+  priceLabel?: string;
+  purchasedAt: string;
+  notificationBlast: boolean;
+  featuredPlacement: boolean;
+};
+
 export type Offer = {
   id: string;
   shopId: string;
@@ -30,6 +40,7 @@ export type Offer = {
   rewardLabel?: string;
   friendsRequired?: number;
   pointsReward?: number;
+  promotion?: OfferPromotion;
   validUntil: string;
   status: OfferStatus;
   createdAt: string;

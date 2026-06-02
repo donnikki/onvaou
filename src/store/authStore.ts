@@ -8,9 +8,14 @@ import { SubscriptionStatus, UserProfile } from '@/src/types';
 
 export const ADMIN_EMAILS = ['admin@biel.local'];
 const createDraftShopId = () => `shop-${Date.now()}`;
+const normalizeEmail = (value: string) => value.trim().toLowerCase();
+const syncLocalUsers = (users: UserProfile[]) => {
+  authService.setLocalUsers(users);
+};
 
 type AuthStore = {
   currentUser: UserProfile | null;
+  savedUsers: UserProfile[];
   selectedRole: 'user' | 'shop' | 'admin' | null;
   onboardingCompleted: boolean;
   shopSubscriptionStatus: SubscriptionStatus;
@@ -19,6 +24,8 @@ type AuthStore = {
   isImpersonating: boolean;
   startShopOnboarding: () => void;
   selectRole: (role: 'user' | 'shop' | 'admin') => void;
+  loginWithEmail: (email: string) => boolean;
+  findSavedUserByEmail: (email: string) => UserProfile | null;
   createUserProfile: (input: Pick<UserProfile, 'name' | 'birthDate' | 'email' | 'phone'>) => UserProfile;
   loginAsAdmin: (email: string, password: string) => boolean;
   setShopSubscriptionStatus: (status: SubscriptionStatus) => void;
@@ -26,6 +33,9 @@ type AuthStore = {
   setShopExpired: () => void;
   continueAsGuest: () => void;
   goToRoleSelection: () => void;
+  loginAsExistingUser: (userId: string) => boolean;
+  loginAsExistingShop: (shopId: string) => boolean;
+  loginAsExistingAdmin: () => boolean;
   impersonateUser: (userId: string) => boolean;
   impersonateShop: (shopId: string) => boolean;
   returnToAdmin: () => boolean;
@@ -34,8 +44,9 @@ type AuthStore = {
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    (set): AuthStore => ({
       currentUser: null,
+      savedUsers: [],
       selectedRole: null,
       onboardingCompleted: false,
       shopSubscriptionStatus: 'inactive',
@@ -77,18 +88,52 @@ export const useAuthStore = create<AuthStore>()(
           selectedRole: role,
         }),
 
-      createUserProfile: (input) => {
-        const user = authService.createUserProfile(input);
+      loginWithEmail: (email: string) => {
+        const normalizedEmail = normalizeEmail(email);
+        const user = useAuthStore.getState().savedUsers.find((entry) => normalizeEmail(entry.email) === normalizedEmail) ?? null;
+
+        if (!user) {
+          return false;
+        }
+
         set({
           currentUser: user,
           selectedRole: 'user',
           onboardingCompleted: true,
+          activeShopId: null,
+          shopSubscriptionStatus: 'inactive',
+          adminSessionUser: null,
+          isImpersonating: false,
         });
+
+        return true;
+      },
+
+      findSavedUserByEmail: (email: string) => {
+        const normalizedEmail = normalizeEmail(email);
+        return useAuthStore.getState().savedUsers.find((entry) => normalizeEmail(entry.email) === normalizedEmail) ?? null;
+      },
+
+      createUserProfile: (input: Pick<UserProfile, 'name' | 'birthDate' | 'email' | 'phone'>) => {
+        const normalizedInput = {
+          ...input,
+          email: normalizeEmail(input.email),
+          phone: input.phone.trim(),
+          name: input.name.trim(),
+        };
+        const user = authService.createUserProfile(normalizedInput);
+        set({
+          currentUser: user,
+          savedUsers: [user, ...useAuthStore.getState().savedUsers.filter((entry) => entry.id !== user.id)],
+          selectedRole: 'user',
+          onboardingCompleted: true,
+        });
+        syncLocalUsers([user, ...useAuthStore.getState().savedUsers.filter((entry) => entry.id !== user.id)]);
 
         return user;
       },
 
-      loginAsAdmin: (email, password) => {
+      loginAsAdmin: (email: string, password: string) => {
         const isAllowed = ADMIN_EMAILS.includes(email.toLowerCase()) && password === 'admin123';
 
         if (!isAllowed) {
@@ -119,12 +164,12 @@ export const useAuthStore = create<AuthStore>()(
         return true;
       },
 
-      setShopSubscriptionStatus: (status) =>
+      setShopSubscriptionStatus: (status: SubscriptionStatus) =>
         set({
           shopSubscriptionStatus: status,
         }),
 
-      activateShopRole: (shopId) =>
+      activateShopRole: (shopId?: string) =>
         set((state) => {
           const resolvedShopId = shopId ?? state.activeShopId ?? createDraftShopId();
 
@@ -175,13 +220,104 @@ export const useAuthStore = create<AuthStore>()(
 
       goToRoleSelection: () =>
         set({
+          currentUser: null,
           selectedRole: null,
           onboardingCompleted: false,
+          activeShopId: null,
+          shopSubscriptionStatus: 'inactive',
           adminSessionUser: null,
           isImpersonating: false,
         }),
 
-      impersonateUser: (userId) => {
+      loginAsExistingUser: (userId: string) => {
+        const user = authService.getById(userId);
+        if (!user || user.role !== 'user') {
+          return false;
+        }
+
+        set({
+          currentUser: user,
+          selectedRole: 'user',
+          onboardingCompleted: true,
+          activeShopId: null,
+          shopSubscriptionStatus: 'inactive',
+          adminSessionUser: null,
+          isImpersonating: false,
+        });
+
+        return true;
+      },
+
+      loginAsExistingShop: (shopId: string) => {
+        const shop = shopService.getById(shopId);
+        if (!shop) {
+          return false;
+        }
+
+        const owner = authService.getById(shop.ownerUserId);
+        const shopRole = shop.subscriptionStatus === 'active' ? 'shop_active' : 'shop_expired';
+
+        const shopUser: UserProfile = owner
+          ? {
+              ...owner,
+              role: shopRole,
+            }
+          : {
+              id: shop.ownerUserId,
+              role: shopRole,
+              name: `${shop.name} Owner`,
+              birthDate: '1990-01-01',
+              email: shop.email,
+              phone: shop.phone,
+              qrCodeValue: authService.buildQrCodeValue(shop.ownerUserId),
+              pointsBalance: 0,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              status: 'active',
+            };
+
+        set({
+          currentUser: shopUser,
+          selectedRole: 'shop',
+          onboardingCompleted: true,
+          activeShopId: shop.id,
+          shopSubscriptionStatus: shop.subscriptionStatus,
+          adminSessionUser: null,
+          isImpersonating: false,
+        });
+
+        return true;
+      },
+
+      loginAsExistingAdmin: () => {
+        const admin =
+          authService.getAllUsers().find((entry) => entry.role === 'admin') ??
+          authService.getByEmail(ADMIN_EMAILS[0]);
+
+        if (!admin) {
+          return false;
+        }
+
+        set({
+          currentUser: {
+            ...admin,
+            role: 'admin',
+          },
+          selectedRole: 'admin',
+          onboardingCompleted: true,
+          activeShopId: null,
+          shopSubscriptionStatus: 'inactive',
+          adminSessionUser: {
+            ...admin,
+            role: 'admin',
+          },
+          isImpersonating: false,
+        });
+
+        return true;
+      },
+
+      impersonateUser: (userId: string) => {
         const targetUser = authService.getById(userId);
         if (!targetUser) {
           return false;
@@ -205,7 +341,7 @@ export const useAuthStore = create<AuthStore>()(
         return true;
       },
 
-      impersonateShop: (shopId) => {
+      impersonateShop: (shopId: string) => {
         const shop = shopService.getById(shopId);
         if (!shop) {
           return false;
@@ -283,8 +419,22 @@ export const useAuthStore = create<AuthStore>()(
     {
       name: 'biel-auth-store',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        syncLocalUsers(state?.savedUsers ?? []);
+      },
+      migrate: (persistedState) => {
+        const state = (persistedState ?? {}) as Partial<AuthStore>;
+        const savedUsers = state.savedUsers ?? [];
+        syncLocalUsers(savedUsers);
+
+        return {
+          ...state,
+          savedUsers,
+        };
+      },
       partialize: (state) => ({
         currentUser: state.currentUser,
+        savedUsers: state.savedUsers,
         selectedRole: state.selectedRole,
         onboardingCompleted: state.onboardingCompleted,
         shopSubscriptionStatus: state.shopSubscriptionStatus,

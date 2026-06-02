@@ -1,55 +1,27 @@
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
 
-import { StepHeader } from '@/src/components/forms/StepHeader';
-import { AppButton } from '@/src/components/ui/AppButton';
-import { BielBrand } from '@/src/components/ui/BielBrand';
-import { Screen } from '@/src/components/ui/Screen';
-import { colors, spacing, typography } from '@/src/theme';
+import { BielIntroFlow } from '@/src/components/help/BielIntroFlow';
+import { useAppStore } from '@/src/store/appStore';
+import { applyTestLogin, getRouteForTestLogin } from '@/src/utils/testLogin';
 
 export default function WelcomeScreen() {
-  return (
-    <Screen>
-      <View style={styles.hero}>
-        <BielBrand />
-        <StepHeader
-          title="Dein Biel. Deine Vorteile."
-          subtitle="Entdecke lokale Angebote, unterstuetze Geschaefte in Biel und sammle Vorteile."
-        />
-      </View>
+  const markAppIntroSeen = useAppStore((state) => state.markAppIntroSeen);
+  const pendingTestLogin = useAppStore((state) => state.pendingTestLogin);
+  const setPendingTestLogin = useAppStore((state) => state.setPendingTestLogin);
 
-      <View style={styles.flagBlock} />
+  const finish = () => {
+    markAppIntroSeen();
 
-      <Text style={styles.text}>
-        Eine App fuer Biel/Bienne mit Shops, Deals, Karte und Vorteilen fuer Nutzer, Geschaefte und Admin.
-      </Text>
+    if (pendingTestLogin && applyTestLogin(pendingTestLogin)) {
+      const nextRoute = getRouteForTestLogin(pendingTestLogin);
+      setPendingTestLogin(null);
+      router.replace(nextRoute);
+      return;
+    }
 
-      <AppButton label="Starten" onPress={() => router.push('/onboarding/role-select')} />
-    </Screen>
-  );
+    setPendingTestLogin(null);
+    router.replace('/onboarding/role-select');
+  };
+
+  return <BielIntroFlow finishLabel="Profil erstellen" onFinish={finish} onSkip={finish} />;
 }
-
-const styles = StyleSheet.create({
-  hero: {
-    marginTop: spacing.xxxl,
-    gap: spacing.xl,
-  },
-  flagBlock: {
-    height: 150,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    elevation: 3,
-  },
-  text: {
-    color: colors.textMuted,
-    fontFamily: typography.family.regular,
-    fontSize: typography.size.lg,
-    lineHeight: typography.lineHeight.relaxed,
-  },
-});

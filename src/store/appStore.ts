@@ -3,12 +3,34 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { ActionTemplate, ShopProfile } from '@/src/types';
+import { defaultSelectedCategories, normalizeSelectedCategories } from '@/src/utils/shopCategories';
+
+export type HintId =
+  | 'discover-map-marker'
+  | 'shop-profile-symbol-step'
+  | 'deals-approval'
+  | 'admin-review';
+
+export type PendingTestLogin =
+  | { type: 'user'; userId: string }
+  | { type: 'shop'; shopId: string }
+  | { type: 'admin' }
+  | { type: 'simulated-market' };
+
+export type TempScenario = {
+  kind: 'simulated-market';
+  restoreShops: ShopProfile[];
+};
 
 type AppStore = {
   favoriteShopIds: string[];
   favoriteOfferIds: string[];
   offerTemplates: ActionTemplate[];
-  selectedCategory: ShopProfile['category'] | null;
+  selectedCategories: ShopProfile['category'][];
+  hasSeenAppIntro: boolean;
+  dismissedHints: Record<HintId, boolean>;
+  pendingTestLogin: PendingTestLogin | null;
+  tempScenario: TempScenario | null;
   featureFlags: {
     receiptScanningEnabled: boolean;
     lotteryEnabled: boolean;
@@ -18,7 +40,12 @@ type AppStore = {
   toggleFavoriteOffer: (offerId: string) => void;
   upsertOfferTemplate: (template: ActionTemplate) => void;
   deleteOfferTemplate: (templateId: string) => void;
-  setSelectedCategory: (category: ShopProfile['category'] | null) => void;
+  setSelectedCategories: (categories: ShopProfile['category'][]) => void;
+  markAppIntroSeen: () => void;
+  setAppIntroSeen: (seen: boolean) => void;
+  dismissHint: (hintId: HintId) => void;
+  setPendingTestLogin: (login: PendingTestLogin | null) => void;
+  setTempScenario: (scenario: TempScenario | null) => void;
   setFeatureFlag: (key: keyof AppStore['featureFlags'], value: boolean) => void;
 };
 
@@ -28,7 +55,16 @@ export const useAppStore = create<AppStore>()(
       favoriteShopIds: [],
       favoriteOfferIds: [],
       offerTemplates: [],
-      selectedCategory: 'Café',
+      selectedCategories: defaultSelectedCategories,
+      hasSeenAppIntro: false,
+      dismissedHints: {
+        'discover-map-marker': false,
+        'shop-profile-symbol-step': false,
+        'deals-approval': false,
+        'admin-review': false,
+      },
+      pendingTestLogin: null,
+      tempScenario: null,
       featureFlags: {
         receiptScanningEnabled: false,
         lotteryEnabled: false,
@@ -61,9 +97,37 @@ export const useAppStore = create<AppStore>()(
           offerTemplates: state.offerTemplates.filter((template) => template.id !== templateId),
         })),
 
-      setSelectedCategory: (category) =>
+      setSelectedCategories: (categories) =>
         set({
-          selectedCategory: category,
+          selectedCategories: normalizeSelectedCategories(categories),
+        }),
+
+      markAppIntroSeen: () =>
+        set({
+          hasSeenAppIntro: true,
+        }),
+
+      setAppIntroSeen: (seen) =>
+        set({
+          hasSeenAppIntro: seen,
+        }),
+
+      dismissHint: (hintId) =>
+        set((state) => ({
+          dismissedHints: {
+            ...state.dismissedHints,
+            [hintId]: true,
+          },
+        })),
+
+      setPendingTestLogin: (login) =>
+        set({
+          pendingTestLogin: login,
+        }),
+
+      setTempScenario: (scenario) =>
+        set({
+          tempScenario: scenario,
         }),
 
       setFeatureFlag: (key, value) =>
@@ -76,12 +140,38 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'biel-app-store',
+      version: 5,
       storage: createJSONStorage(() => AsyncStorage),
+      migrate: (persistedState) => {
+        const state = (persistedState ?? {}) as Partial<AppStore> & {
+          selectedCategory?: ShopProfile['category'] | null;
+        };
+
+        return {
+          ...state,
+          selectedCategories: normalizeSelectedCategories(
+            state.selectedCategories ?? (state.selectedCategory ? [state.selectedCategory] : defaultSelectedCategories),
+          ),
+          hasSeenAppIntro: state.hasSeenAppIntro ?? false,
+          dismissedHints: {
+            'discover-map-marker': state.dismissedHints?.['discover-map-marker'] ?? false,
+            'shop-profile-symbol-step': state.dismissedHints?.['shop-profile-symbol-step'] ?? false,
+            'deals-approval': state.dismissedHints?.['deals-approval'] ?? false,
+            'admin-review': state.dismissedHints?.['admin-review'] ?? false,
+          },
+          pendingTestLogin: state.pendingTestLogin ?? null,
+          tempScenario: state.tempScenario ?? null,
+        };
+      },
       partialize: (state) => ({
         favoriteShopIds: state.favoriteShopIds,
         favoriteOfferIds: state.favoriteOfferIds,
         offerTemplates: state.offerTemplates,
-        selectedCategory: state.selectedCategory,
+        selectedCategories: state.selectedCategories,
+        hasSeenAppIntro: state.hasSeenAppIntro,
+        dismissedHints: state.dismissedHints,
+        pendingTestLogin: state.pendingTestLogin,
+        tempScenario: state.tempScenario,
         featureFlags: state.featureFlags,
       }),
     },

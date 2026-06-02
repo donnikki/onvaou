@@ -1,5 +1,6 @@
 import { useShopStore } from '@/src/store/shopStore';
 import { ShopCategory, ShopProfile } from '@/src/types';
+import { normalizeShopProfile } from '@/src/utils/shopCategories';
 
 const nowIso = () => new Date().toISOString();
 
@@ -36,23 +37,24 @@ export const shopService = {
 
   upsert(shop: ShopProfile) {
     const shops = getShops();
-    const existing = shops.some((item) => item.id === shop.id);
+    const normalizedShop = normalizeShopProfile(shop);
+    const existing = shops.some((item) => item.id === normalizedShop.id);
 
     if (existing) {
       const nextShops = shops.map((item) =>
-        item.id === shop.id
+        item.id === normalizedShop.id
           ? {
-              ...shop,
+              ...normalizedShop,
               updatedAt: nowIso(),
             }
           : item,
       );
       setShops(nextShops);
-      return nextShops.find((item) => item.id === shop.id) ?? shop;
+      return nextShops.find((item) => item.id === normalizedShop.id) ?? normalizedShop;
     }
 
     const next = {
-      ...shop,
+      ...normalizedShop,
       createdAt: nowIso(),
       updatedAt: nowIso(),
     };
@@ -126,16 +128,33 @@ export const shopService = {
         | 'website'
         | 'logoUrl'
         | 'heroImageUrl'
+        | 'mapIcon'
       >
     >,
   ) {
     const nextShops = getShops().map((shop) =>
       shop.id === id
-        ? {
+        ? normalizeShopProfile({
             ...shop,
             ...updates,
             updatedAt: nowIso(),
-          }
+          })
+        : shop,
+    );
+
+    setShops(nextShops);
+    return nextShops.find((shop) => shop.id === id) ?? null;
+  },
+
+  updateShopProfile(id: string, updates: Partial<ShopProfile>) {
+    const nextShops = getShops().map((shop) =>
+      shop.id === id
+        ? normalizeShopProfile({
+            ...shop,
+            ...updates,
+            id: shop.id,
+            updatedAt: nowIso(),
+          })
         : shop,
     );
 

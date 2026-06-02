@@ -1,27 +1,33 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
 
 import { StepHeader } from '@/src/components/forms/StepHeader';
+import { OpeningHoursEditor } from '@/src/components/shop/OpeningHoursEditor';
 import { AppButton } from '@/src/components/ui/AppButton';
 import { AppCard } from '@/src/components/ui/AppCard';
 import { AppInput } from '@/src/components/ui/AppInput';
 import { Screen } from '@/src/components/ui/Screen';
+import { ShopCategoryTreePicker } from '@/src/components/ui/ShopCategoryTreePicker';
+import { ShopCategoryPicker } from '@/src/components/ui/ShopCategoryPicker';
 import { shopService } from '@/src/services/shopService';
 import { useAuthStore } from '@/src/store/authStore';
 import { colors, spacing, typography } from '@/src/theme';
-import { ShopCategory, ShopProfile } from '@/src/types';
+import { MapIcon, ShopCategory, ShopProfile } from '@/src/types';
+import { pickMultipleImages, pickSingleImage } from '@/src/utils/mediaLibrary';
 import { finishShopSetup } from '@/src/utils/navigation';
 import { categoryToMapIcon, defaultOpeningHours } from '@/src/utils/shop';
-import { categoryList, isRequired } from '@/src/utils/validators';
+import { getShopContentConfig, parseProductsFromLines, parseServicesFromLines } from '@/src/utils/shopProfile';
+import { isRequired } from '@/src/utils/validators';
 
 const steps = [
   'Basisdaten',
   'Adresse',
   'Oeffnungszeiten',
-  'Produkte',
-  'Dienstleistungen',
+  'Hauptinhalte',
+  'Weitere Inhalte',
   'Bilder',
   'Map-Symbol',
 ] as const;
@@ -100,6 +106,8 @@ export default function ShopProfileOnboardingScreen() {
 
   const [stepIndex, setStepIndex] = useState(0);
   const [category, setCategory] = useState<ShopCategory>('Coiffeur');
+  const [mapIcon, setMapIcon] = useState<MapIcon>(categoryToMapIcon['Coiffeur']);
+  const contentConfig = useMemo(() => getShopContentConfig(category), [category]);
   const [form, setForm] = useState({
     name: 'Choppers',
     description: 'Moderner Shop in Biel/Bienne.',
@@ -112,13 +120,16 @@ export default function ShopProfileOnboardingScreen() {
     phone: '+41 32 322 40 40',
     email: 'hello@choppers-biel.ch',
     website: '',
-    products: 'Kaffee, Pflegeprodukte, Drinks',
-    services: 'Herrenhaarschnitt, Bartpflege, Beratung & Styling',
+    primaryLines: 'Herrenhaarschnitt | ab CHF 42\nBartpflege | ab CHF 28\nBeratung & Styling',
+    secondaryLines: 'Styling Paste | CHF 19\nBartoel | CHF 24',
     logoUrl: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=400&q=80',
     heroImageUrl: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1400&q=80',
-    galleryImageUrls:
-      'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=600&q=80,https://images.unsplash.com/photo-1519415943484-9fa1873496d4?auto=format&fit=crop&w=600&q=80',
+    galleryImageUrls: [
+      'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1519415943484-9fa1873496d4?auto=format&fit=crop&w=600&q=80',
+    ],
   });
+  const [openingHours, setOpeningHours] = useState(defaultOpeningHours);
   const [confirmedCoordinates, setConfirmedCoordinates] = useState(
     addressCoordinateMap['Zentralstrasse 40'] ?? { latitude: initialRegion.latitude, longitude: initialRegion.longitude },
   );
@@ -231,32 +242,19 @@ export default function ShopProfileOnboardingScreen() {
       phone: form.phone,
       email: form.email,
       website: form.website || undefined,
-      openingHours: defaultOpeningHours,
-      products: form.products
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean)
-        .map((value, index) => ({
-          id: `product-${index}`,
-          name: value,
-          description: `${value} aus dem Sortiment`,
-        })),
-      services: form.services
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean)
-        .map((value, index) => ({
-          id: `service-${index}`,
-          name: value,
-          description: `${value} im Shop`,
-        })),
+      openingHours,
+      products:
+        contentConfig.primaryKind === 'products'
+          ? parseProductsFromLines(form.primaryLines)
+          : parseProductsFromLines(form.secondaryLines),
+      services:
+        contentConfig.primaryKind === 'services'
+          ? parseServicesFromLines(form.primaryLines)
+          : parseServicesFromLines(form.secondaryLines),
       logoUrl: form.logoUrl,
       heroImageUrl: form.heroImageUrl,
-      galleryImageUrls: form.galleryImageUrls
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean),
-      mapIcon: categoryToMapIcon[category],
+      galleryImageUrls: form.galleryImageUrls,
+      mapIcon,
       subscriptionStatus: 'active',
       adminApproved: false,
       isVisibleOnMap: false,
@@ -283,16 +281,14 @@ export default function ShopProfileOnboardingScreen() {
           <View style={styles.group}>
             <AppInput label="Shop-Name" required value={form.name} onChangeText={(value) => setForm((old) => ({ ...old, name: value }))} />
             <Text style={styles.label}>Kategorie *</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
-              {categoryList.map((item) => {
-                const active = item === category;
-                return (
-                  <Pressable key={item} style={[styles.categoryChip, active && styles.categoryChipActive]} onPress={() => setCategory(item)}>
-                    <Text style={[styles.categoryText, active && styles.categoryTextActive]}>{item}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+            <ShopCategoryTreePicker
+              mode="single"
+              value={category}
+              onChange={(value) => {
+                setCategory(value);
+                setMapIcon(categoryToMapIcon[value]);
+              }}
+            />
             <AppInput
               label="Kurzbeschreibung"
               required
@@ -451,7 +447,8 @@ export default function ShopProfileOnboardingScreen() {
 
         {stepIndex === 2 ? (
           <View style={styles.group}>
-            <Text style={styles.hint}>Mo-So jeweils geoeffnet/geschlossen mit Zeitfenster. (V1 nutzt Standardzeiten)</Text>
+            <Text style={styles.hint}>Lege fest, wann Nutzer deinen Shop besuchen oder kontaktieren koennen.</Text>
+            <OpeningHoursEditor value={openingHours} onChange={setOpeningHours} />
             <AppInput label="Telefon" required value={form.phone} onChangeText={(value) => setForm((old) => ({ ...old, phone: value }))} keyboardType="phone-pad" />
             <AppInput label="E-Mail" required value={form.email} onChangeText={(value) => setForm((old) => ({ ...old, email: value }))} keyboardType="email-address" autoCapitalize="none" />
           </View>
@@ -459,39 +456,90 @@ export default function ShopProfileOnboardingScreen() {
 
         {stepIndex === 3 ? (
           <AppInput
-            label="Produkte (mit Komma trennen)"
-            value={form.products}
-            onChangeText={(value) => setForm((old) => ({ ...old, products: value }))}
+            label={contentConfig.primaryTitle}
+            value={form.primaryLines}
+            onChangeText={(value) => setForm((old) => ({ ...old, primaryLines: value }))}
+            placeholder={contentConfig.primaryPlaceholder}
             multiline
           />
         ) : null}
 
         {stepIndex === 4 ? (
           <AppInput
-            label="Dienstleistungen (mit Komma trennen)"
-            value={form.services}
-            onChangeText={(value) => setForm((old) => ({ ...old, services: value }))}
+            label={contentConfig.secondaryTitle}
+            value={form.secondaryLines}
+            onChangeText={(value) => setForm((old) => ({ ...old, secondaryLines: value }))}
+            placeholder={contentConfig.secondaryPlaceholder}
             multiline
           />
         ) : null}
 
         {stepIndex === 5 ? (
           <View style={styles.group}>
-            <AppInput label="Logo URL" value={form.logoUrl} onChangeText={(value) => setForm((old) => ({ ...old, logoUrl: value }))} autoCapitalize="none" />
-            <AppInput label="Hero-Bild URL" value={form.heroImageUrl} onChangeText={(value) => setForm((old) => ({ ...old, heroImageUrl: value }))} autoCapitalize="none" />
-            <AppInput
-              label="Galerie URLs (mit Komma trennen)"
-              value={form.galleryImageUrls}
-              onChangeText={(value) => setForm((old) => ({ ...old, galleryImageUrls: value }))}
-              multiline
-              autoCapitalize="none"
+            <Text style={styles.hint}>Fuege Fotos direkt aus deiner iPhone-Mediathek hinzu.</Text>
+            <AppButton
+              label="Logo aus Mediathek"
+              variant="secondary"
+              onPress={async () => {
+                const uri = await pickSingleImage();
+                if (!uri) {
+                  return;
+                }
+                setForm((old) => ({ ...old, logoUrl: uri }));
+              }}
             />
+            <AppButton
+              label="Titelbild aus Mediathek"
+              variant="secondary"
+              onPress={async () => {
+                const uri = await pickSingleImage();
+                if (!uri) {
+                  return;
+                }
+                setForm((old) => ({ ...old, heroImageUrl: uri }));
+              }}
+            />
+            <AppButton
+              label="Galeriebilder hinzufuegen"
+              variant="ghost"
+              onPress={async () => {
+                const uris = await pickMultipleImages();
+                if (uris.length === 0) {
+                  return;
+                }
+                setForm((old) => ({ ...old, galleryImageUrls: [...old.galleryImageUrls, ...uris].slice(0, 8) }));
+              }}
+            />
+
+            <View style={styles.imagePreviewStack}>
+              <Image source={{ uri: form.logoUrl }} style={styles.previewLogo} />
+              <Image source={{ uri: form.heroImageUrl }} style={styles.previewHero} />
+            </View>
+
+            <View style={styles.galleryGrid}>
+              {form.galleryImageUrls.map((imageUrl) => (
+                <View key={imageUrl} style={styles.galleryItem}>
+                  <Image source={{ uri: imageUrl }} style={styles.galleryImage} />
+                  <Pressable
+                    style={styles.removeGalleryButton}
+                    onPress={() =>
+                      setForm((old) => ({
+                        ...old,
+                        galleryImageUrls: old.galleryImageUrls.filter((entry) => entry !== imageUrl),
+                      }))
+                    }>
+                    <Ionicons name="close" size={14} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
           </View>
         ) : null}
 
         {stepIndex === 6 ? (
           <View style={styles.group}>
-            <Text style={styles.hint}>Map-Symbol wird automatisch anhand der Kategorie gesetzt: {categoryToMapIcon[category]}</Text>
+            <Text style={styles.hint}>Waehle das Symbol, das auf der Karte fuer deinen Shop angezeigt werden soll.</Text>
+            <ShopCategoryPicker mode="icon" value={mapIcon} onChange={setMapIcon} />
             <AppInput label="Website (optional)" value={form.website} onChangeText={(value) => setForm((old) => ({ ...old, website: value }))} autoCapitalize="none" />
           </View>
         ) : null}
@@ -545,9 +593,6 @@ const styles = StyleSheet.create({
     fontSize: typography.size.sm,
     lineHeight: typography.lineHeight.normal,
   },
-  categoryRow: {
-    gap: spacing.sm,
-  },
   addressSuggestionRow: {
     gap: spacing.sm,
   },
@@ -590,26 +635,6 @@ const styles = StyleSheet.create({
   addressSuggestionTextActive: {
     color: colors.text,
   },
-  categoryChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: '#FFFFFF',
-  },
-  categoryChipActive: {
-    backgroundColor: colors.primaryRed,
-    borderColor: colors.primaryRed,
-  },
-  categoryText: {
-    color: colors.text,
-    fontFamily: typography.family.medium,
-    fontSize: typography.size.sm,
-  },
-  categoryTextActive: {
-    color: '#FFFFFF',
-  },
   inputRow: {
     flexDirection: 'row',
     gap: spacing.md,
@@ -651,5 +676,45 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: spacing.md,
+  },
+  imagePreviewStack: {
+    gap: spacing.sm,
+  },
+  previewLogo: {
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    backgroundColor: '#F3F4F6',
+  },
+  previewHero: {
+    width: '100%',
+    height: 160,
+    borderRadius: 18,
+    backgroundColor: '#F3F4F6',
+  },
+  galleryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  galleryItem: {
+    position: 'relative',
+  },
+  galleryImage: {
+    width: 104,
+    height: 84,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+  },
+  removeGalleryButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(23,23,23,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

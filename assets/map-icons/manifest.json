@@ -1,0 +1,192 @@
+[
+  {
+    "label": "Kleiderladen",
+    "filename": "kleiderladen.png",
+    "relativePath": "assets/map-icons/kleiderladen.png"
+  },
+  {
+    "label": "Schuhladen",
+    "filename": "schuhladen.png",
+    "relativePath": "assets/map-icons/schuhladen.png"
+  },
+  {
+    "label": "Schmuckladen",
+    "filename": "schmuckladen.png",
+    "relativePath": "assets/map-icons/schmuckladen.png"
+  },
+  {
+    "label": "Elektronikladen",
+    "filename": "elektronikladen.png",
+    "relativePath": "assets/map-icons/elektronikladen.png"
+  },
+  {
+    "label": "Buchhandlung",
+    "filename": "buchhandlung.png",
+    "relativePath": "assets/map-icons/buchhandlung.png"
+  },
+  {
+    "label": "Blumenladen",
+    "filename": "blumenladen.png",
+    "relativePath": "assets/map-icons/blumenladen.png"
+  },
+  {
+    "label": "Supermarkt",
+    "filename": "supermarkt.png",
+    "relativePath": "assets/map-icons/supermarkt.png"
+  },
+  {
+    "label": "Apotheke",
+    "filename": "apotheke.png",
+    "relativePath": "assets/map-icons/apotheke.png"
+  },
+  {
+    "label": "Heim/Garten",
+    "filename": "heim-garten.png",
+    "relativePath": "assets/map-icons/heim-garten.png"
+  },
+  {
+    "label": "Tierbedarf",
+    "filename": "tierbedarf.png",
+    "relativePath": "assets/map-icons/tierbedarf.png"
+  },
+  {
+    "label": "Papeterie",
+    "filename": "papeterie.png",
+    "relativePath": "assets/map-icons/papeterie.png"
+  },
+  {
+    "label": "Brocki",
+    "filename": "brocki.png",
+    "relativePath": "assets/map-icons/brocki.png"
+  },
+  {
+    "label": "Kosmetik",
+    "filename": "kosmetik.png",
+    "relativePath": "assets/map-icons/kosmetik.png"
+  },
+  {
+    "label": "Getränkeladen",
+    "filename": "getraenkeladen.png",
+    "relativePath": "assets/map-icons/getraenkeladen.png"
+  },
+  {
+    "label": "Restaurant",
+    "filename": "restaurant.png",
+    "relativePath": "assets/map-icons/restaurant.png"
+  },
+  {
+    "label": "Café",
+    "filename": "cafe.png",
+    "relativePath": "assets/map-icons/cafe.png"
+  },
+  {
+    "label": "Bar",
+    "filename": "bar.png",
+    "relativePath": "assets/map-icons/bar.png"
+  },
+  {
+    "label": "Pizzeria",
+    "filename": "pizzeria.png",
+    "relativePath": "assets/map-icons/pizzeria.png"
+  },
+  {
+    "label": "Bäckerei",
+    "filename": "baeckerei.png",
+    "relativePath": "assets/map-icons/baeckerei.png"
+  },
+  {
+    "label": "Konditorei",
+    "filename": "konditorei.png",
+    "relativePath": "assets/map-icons/konditorei.png"
+  },
+  {
+    "label": "Eisdiele",
+    "filename": "eisdiele.png",
+    "relativePath": "assets/map-icons/eisdiele.png"
+  },
+  {
+    "label": "Fast Food",
+    "filename": "fast-food.png",
+    "relativePath": "assets/map-icons/fast-food.png"
+  },
+  {
+    "label": "Coiffeur",
+    "filename": "coiffeur.png",
+    "relativePath": "assets/map-icons/coiffeur.png"
+  },
+  {
+    "label": "Nagelstudio",
+    "filename": "nagelstudio.png",
+    "relativePath": "assets/map-icons/nagelstudio.png"
+  },
+  {
+    "label": "Kosmetikstudio",
+    "filename": "kosmetikstudio.png",
+    "relativePath": "assets/map-icons/kosmetikstudio.png"
+  },
+  {
+    "label": "Massage",
+    "filename": "massage.png",
+    "relativePath": "assets/map-icons/massage.png"
+  },
+  {
+    "label": "Physiotherapie",
+    "filename": "physiotherapie.png",
+    "relativePath": "assets/map-icons/physiotherapie.png"
+  },
+  {
+    "label": "Fitnessstudio",
+    "filename": "fitnessstudio.png",
+    "relativePath": "assets/map-icons/fitnessstudio.png"
+  },
+  {
+    "label": "Optiker",
+    "filename": "optiker.png",
+    "relativePath": "assets/map-icons/optiker.png"
+  },
+  {
+    "label": "Autowaschanlage",
+    "filename": "autowaschanlage.png",
+    "relativePath": "assets/map-icons/autowaschanlage.png"
+  },
+  {
+    "label": "Konzert",
+    "filename": "konzert.png",
+    "relativePath": "assets/map-icons/konzert.png"
+  },
+  {
+    "label": "Festival",
+    "filename": "festival.png",
+    "relativePath": "assets/map-icons/festival.png"
+  },
+  {
+    "label": "Party",
+    "filename": "party.png",
+    "relativePath": "assets/map-icons/party.png"
+  },
+  {
+    "label": "Markt",
+    "filename": "markt.png",
+    "relativePath": "assets/map-icons/markt.png"
+  },
+  {
+    "label": "Ausstellung",
+    "filename": "ausstellung.png",
+    "relativePath": "assets/map-icons/ausstellung.png"
+  },
+  {
+    "label": "Kino",
+    "filename": "kino.png",
+    "relativePath": "assets/map-icons/kino.png"
+  },
+  {
+    "label": "Theater",
+    "filename": "theater.png",
+    "relativePath": "assets/map-icons/theater.png"
+  },
+  {
+    "label": "Sportevent",
+    "filename": "sportevent.png",
+    "relativePath": "assets/map-icons/sportevent.png"
+  }
+]

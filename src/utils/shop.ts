@@ -1,16 +1,6 @@
-import { MapIcon, OpeningHours, ShopCategory } from '@/src/types';
+import { OpeningHours } from '@/src/types';
 
-export const categoryToMapIcon: Record<ShopCategory, MapIcon> = {
-  'Café': 'coffee',
-  Restaurant: 'utensils',
-  Bar: 'beer',
-  Club: 'music',
-  Coiffeur: 'scissors',
-  Supermarkt: 'shopping-cart',
-  Event: 'ticket',
-  Dienstleistung: 'wrench',
-  Sonstiges: 'map-pin',
-};
+export { categoryToMapIcon } from '@/src/utils/shopCategories';
 
 export const defaultOpeningHours: OpeningHours = {
   monday: { isOpen: true, openTime: '09:00', closeTime: '19:00' },

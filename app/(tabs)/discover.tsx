@@ -1,17 +1,17 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import MapView, { Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ShopMarker } from '@/src/components/map/ShopMarker';
-import { BielBrand } from '@/src/components/ui/BielBrand';
+import { ShopCategoryTreePicker } from '@/src/components/ui/ShopCategoryTreePicker';
 import { colors, spacing, typography } from '@/src/theme';
 import { useAppStore } from '@/src/store/appStore';
+import { useOfferStore } from '@/src/store/offerStore';
 import { useShopStore } from '@/src/store/shopStore';
-import { categoryList } from '@/src/utils/validators';
-import { offerService } from '@/src/services/offerService';
 import { getOfferBadgeLabel } from '@/src/utils/offers';
+import { areAllCategoriesSelected, shopTopCategories } from '@/src/utils/shopCategories';
 
 const initialRegion: Region = {
   latitude: 47.1368,
@@ -21,94 +21,86 @@ const initialRegion: Region = {
 };
 
 export default function DiscoverScreen() {
-  const [query, setQuery] = useState('');
+  const [filterOpen, setFilterOpen] = useState(true);
 
-  const selectedCategory = useAppStore((state) => state.selectedCategory);
-  const setSelectedCategory = useAppStore((state) => state.setSelectedCategory);
+  const selectedCategories = useAppStore((state) => state.selectedCategories);
+  const setSelectedCategories = useAppStore((state) => state.setSelectedCategories);
   const allShops = useShopStore((state) => state.shops);
+  const offers = useOfferStore((state) => state.offers);
+  const hasCustomSelection = !areAllCategoriesSelected(selectedCategories);
 
   const shops = useMemo(() => {
+    const activeCategorySet = new Set(selectedCategories);
     const source = allShops.filter((shop) => {
-      if (selectedCategory && shop.category !== selectedCategory) {
+      if (!activeCategorySet.has(shop.category)) {
         return false;
       }
 
       return shop.isVisibleOnMap && shop.adminApproved && shop.subscriptionStatus === 'active';
     });
 
-    return source.filter((shop) => {
-      if (!query.trim()) {
-        return true;
-      }
+    return source;
+  }, [allShops, selectedCategories]);
 
-      const normalized = query.toLowerCase();
-      return (
-        shop.name.toLowerCase().includes(normalized) ||
-        shop.category.toLowerCase().includes(normalized) ||
-        shop.description.toLowerCase().includes(normalized)
-      );
-    });
-  }, [allShops, query, selectedCategory]);
-
-  const offers = offerService.getActive();
+  const activeOffers = useMemo(() => offers.filter((offer) => offer.status === 'active'), [offers]);
 
   return (
     <View style={styles.container}>
-      <View style={styles.topContainer}>
-        <BielBrand titleSize={36} centered={false} />
-        <Text style={styles.subtitle}>Dein Biel. Deine Vorteile.</Text>
+      <View style={styles.filterPanel}>
+        <Pressable
+          style={[styles.filterHeader, filterOpen && styles.filterHeaderOpen]}
+          onPress={() => setFilterOpen((value) => !value)}>
+          <View style={styles.filterHeaderTextWrap}>
+            <Text style={styles.filterTitle}>Kategorien</Text>
+            <Text style={styles.filterSubtitle}>
+              {hasCustomSelection ? `${selectedCategories.length} ausgewaehlt` : 'Alle Kategorien'}
+            </Text>
+          </View>
+          <View style={[styles.filterToggle, filterOpen && styles.filterToggleOpen]}>
+            <Ionicons name={filterOpen ? 'chevron-up' : 'chevron-down'} size={20} color={filterOpen ? '#FFFFFF' : colors.primaryRed} />
+            {hasCustomSelection && !filterOpen ? <View style={styles.filterDot} /> : null}
+          </View>
+        </Pressable>
 
-        <View style={styles.searchRow}>
-          <TextInput
-            placeholder="Suche in Biel"
-            placeholderTextColor={colors.textMuted}
-            value={query}
-            onChangeText={setQuery}
-            style={styles.searchInput}
-          />
-          <Pressable style={styles.filterButton}>
-            <Ionicons name="filter-outline" size={18} color={colors.primaryRed} />
-          </Pressable>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-          {categoryList.map((category) => {
-            const active = selectedCategory === category;
-            return (
-              <Pressable
-                key={category}
-                style={[styles.chip, active && styles.chipActive]}
-                onPress={() => setSelectedCategory(active ? null : category)}>
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{category}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        {filterOpen ? (
+          <View style={styles.filterDropdown}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.filterScrollContent}>
+              <ShopCategoryTreePicker
+                mode="multi"
+                value={selectedCategories}
+                onChange={setSelectedCategories}
+                initialExpandedIds={shopTopCategories.map((entry) => entry.id)}
+              />
+            </ScrollView>
+          </View>
+        ) : null}
       </View>
 
-      <MapView
-        style={styles.map}
-        initialRegion={initialRegion}
-        showsCompass
-        showsBuildings={false}
-        showsIndoors={false}
-        showsPointsOfInterest={false}
-        showsTraffic={false}
-        toolbarEnabled={false}>
-        {shops.map((shop) => {
-          const activeOffer = offers.find((offer) => offer.shopId === shop.id);
-          const hasDeal = Boolean(activeOffer);
-          return (
-            <ShopMarker
-              key={shop.id}
-              shop={shop}
-              showDealBadge={hasDeal}
-              dealBadgeText={activeOffer ? getOfferBadgeLabel(activeOffer) : '%'}
-              onPress={() => router.push(`/shop-detail/${shop.id}`)}
-            />
-          );
-        })}
-      </MapView>
+      <View style={styles.mapWrap}>
+        <MapView
+          style={styles.map}
+          initialRegion={initialRegion}
+          showsCompass
+          showsBuildings={false}
+          showsIndoors={false}
+          showsPointsOfInterest={false}
+          showsTraffic={false}
+          toolbarEnabled={false}>
+          {shops.map((shop) => {
+            const activeOffer = activeOffers.find((offer) => offer.shopId === shop.id);
+            const hasDeal = Boolean(activeOffer);
+            return (
+              <ShopMarker
+                key={shop.id}
+                shop={shop}
+                showDealBadge={hasDeal}
+                dealBadgeText={activeOffer ? getOfferBadgeLabel(activeOffer) : '%'}
+                onPress={() => router.push(`/shop-detail/${shop.id}`)}
+              />
+            );
+          })}
+        </MapView>
+      </View>
     </View>
   );
 }
@@ -118,36 +110,49 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  topContainer: {
+  filterPanel: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    gap: spacing.md,
-    zIndex: 20,
-    backgroundColor: '#FFFFFF',
-  },
-  subtitle: {
-    color: colors.textMuted,
-    fontFamily: typography.family.regular,
-    fontSize: typography.size.md,
-  },
-  searchRow: {
-    flexDirection: 'row',
+    paddingBottom: spacing.sm,
     gap: spacing.sm,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    zIndex: 2,
   },
-  searchInput: {
-    flex: 1,
-    height: 48,
-    borderRadius: 14,
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  filterHeaderOpen: {
+    borderColor: colors.primaryRed,
+    backgroundColor: '#FFF5F5',
+  },
+  filterHeaderTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  filterTitle: {
     color: colors.text,
-    fontFamily: typography.family.regular,
+    fontFamily: typography.family.semibold,
     fontSize: typography.size.md,
   },
-  filterButton: {
-    width: 48,
-    height: 48,
+  filterSubtitle: {
+    color: colors.textMuted,
+    fontFamily: typography.family.regular,
+    fontSize: typography.size.sm,
+  },
+  filterToggle: {
+    width: 42,
+    height: 42,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#FECACA',
@@ -155,29 +160,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFF1F1',
   },
-  chipRow: {
-    gap: spacing.sm,
-    paddingBottom: spacing.sm,
+  filterToggleOpen: {
+    borderColor: colors.primaryRed,
+    backgroundColor: colors.primaryRed,
   },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: 999,
+  filterDot: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primaryRed,
+  },
+  filterDropdown: {
+    maxHeight: 300,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    padding: spacing.md,
+    shadowColor: '#171717',
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
-  chipActive: {
-    backgroundColor: colors.primaryRed,
-    borderColor: colors.primaryRed,
+  filterScrollContent: {
+    paddingBottom: spacing.xs,
   },
-  chipText: {
-    color: colors.text,
-    fontFamily: typography.family.medium,
-    fontSize: typography.size.sm,
-  },
-  chipTextActive: {
-    color: '#FFFFFF',
+  mapWrap: {
+    flex: 1,
+    position: 'relative',
   },
   map: {
     flex: 1,

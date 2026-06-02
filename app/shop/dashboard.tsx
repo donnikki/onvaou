@@ -13,13 +13,13 @@ import { shopService } from '@/src/services/shopService';
 import { useAuthStore } from '@/src/store/authStore';
 import { useShopStore } from '@/src/store/shopStore';
 import { colors, spacing, typography } from '@/src/theme';
-import { goToRoleSelection as navigateToRoleSelection, goToWelcome } from '@/src/utils/navigation';
-import { getOfferConditionLabel, getOfferRewardLabel } from '@/src/utils/offers';
+import { goToWelcome, resetToRoleSelection } from '@/src/utils/navigation';
+import { getOfferConditionLabel, getOfferPromotionLabel, getOfferRewardLabel } from '@/src/utils/offers';
 
 const checklist = ['Basisdaten', 'Adresse', 'Oeffnungszeiten', 'Logo', 'Kategorie/Symbol', 'Admin-Freigabe'];
 
 export default function ShopDashboardScreen() {
-  const { currentUser, activeShopId, goToRoleSelection } = useAuthStore();
+  const { currentUser, activeShopId } = useAuthStore();
   const shops = useShopStore((state) => state.shops);
   const [hiddenRequestIds, setHiddenRequestIds] = useState<string[]>([]);
   const [, setRefreshKey] = useState(0);
@@ -62,19 +62,8 @@ export default function ShopDashboardScreen() {
           {getOfferConditionLabel(pendingOffers[0]) ? <Text style={styles.meta}>{getOfferConditionLabel(pendingOffers[0])}</Text> : null}
           <View style={styles.actionRow}>
             <AppButton
-              label="Akzeptieren"
-              onPress={() => {
-                offerService.acceptByShop(pendingOffers[0].id);
-                setRefreshKey((value) => value + 1);
-              }}
-            />
-            <AppButton
-              label="Ablehnen"
-              variant="secondary"
-              onPress={() => {
-                offerService.declineByShop(pendingOffers[0].id);
-                setRefreshKey((value) => value + 1);
-              }}
+              label="Promotion waehlen"
+              onPress={() => router.push('/shop/offers')}
             />
             <AppButton
               label="Spaeter"
@@ -108,7 +97,7 @@ export default function ShopDashboardScreen() {
         </AppCard>
       ) : null}
 
-      <Text style={styles.sectionTitle}>So sehen Nutzer dein Profil</Text>
+      <Text style={styles.sectionTitle}>Mein Profil</Text>
 
       <Pressable style={styles.previewCard} onPress={() => router.push('/shop/edit-profile')}>
         <Image source={{ uri: shop.heroImageUrl }} style={styles.hero} />
@@ -122,6 +111,11 @@ export default function ShopDashboardScreen() {
           <AppBadge text="Tippen zum Bearbeiten" tone="muted" />
         </View>
       </Pressable>
+
+      <View style={styles.profileActionRow}>
+        <AppButton label="Profil anpassen" onPress={() => router.push('/shop/edit-profile')} />
+        <AppButton label="Vorschau meines Profiles" variant="secondary" onPress={() => router.push(`/shop-detail/${shop.id}?preview=1`)} />
+      </View>
 
       <View style={styles.previewGrid}>
         <Pressable style={styles.previewBlock} onPress={() => router.push('/shop/edit-profile')}>
@@ -164,6 +158,7 @@ export default function ShopDashboardScreen() {
                 <AppBadge text="Aktiv" tone="green" />
               </View>
               <Text style={styles.value}>{offer.description}</Text>
+              {getOfferPromotionLabel(offer) ? <Text style={styles.meta}>{getOfferPromotionLabel(offer)}</Text> : null}
               <Text style={styles.meta}>Bestaetigt: {redemptionService.getConfirmedCount(offer.id)}</Text>
             </View>
           ))
@@ -174,10 +169,7 @@ export default function ShopDashboardScreen() {
         <AppButton
           label="Zur Profil-Wahl"
           variant="ghost"
-          onPress={() => {
-            goToRoleSelection();
-            navigateToRoleSelection();
-          }}
+          onPress={resetToRoleSelection}
         />
         <AppButton label="Profil bearbeiten" onPress={() => router.push('/shop/edit-profile')} />
         <AppButton label="Abo" variant="secondary" onPress={() => router.push('/shop/subscription')} />
@@ -308,6 +300,9 @@ const styles = StyleSheet.create({
     fontSize: typography.size.sm,
   },
   previewGrid: {
+    gap: spacing.sm,
+  },
+  profileActionRow: {
     gap: spacing.sm,
   },
   previewBlock: {

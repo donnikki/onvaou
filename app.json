@@ -14,7 +14,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Biel verwendet deinen Standort, um dir Angebote und Shops in deiner Naehe anzuzeigen.",
         "NSCameraUsageDescription": "Biel verwendet die Kamera, damit du spaeter Quittungen scannen kannst.",
-        "NSPhotoLibraryUsageDescription": "Biel verwendet Fotos, damit du spaeter Quittungen oder Shop-Bilder auswaehlen kannst."
+        "NSPhotoLibraryUsageDescription": "Biel verwendet Fotos, damit du spaeter Quittungen oder Shop-Bilder auswaehlen kannst.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -49,6 +50,13 @@
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "058dab47-e863-4174-8b66-7214c857bdf2"
+      }
+    },
+    "owner": "donnikki"
   }
 }

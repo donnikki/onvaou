@@ -1,26 +1,90 @@
 import { SubscriptionStatus } from './subscription';
 
-export type ShopCategory =
-  | 'Café'
-  | 'Restaurant'
-  | 'Bar'
-  | 'Club'
-  | 'Coiffeur'
-  | 'Supermarkt'
-  | 'Event'
-  | 'Dienstleistung'
-  | 'Sonstiges';
+export const shopCategoryLabels = [
+  'Kleiderladen',
+  'Schuhladen',
+  'Schmuckladen',
+  'Elektronikladen',
+  'Buchhandlung',
+  'Blumenladen',
+  'Supermarkt',
+  'Apotheke',
+  'Heim/Garten',
+  'Tierbedarf',
+  'Papeterie',
+  'Brocki',
+  'Kosmetik',
+  'Getränkeladen',
+  'Restaurant',
+  'Café',
+  'Bar',
+  'Pizzeria',
+  'Bäckerei',
+  'Konditorei',
+  'Eisdiele',
+  'Fast Food',
+  'Coiffeur',
+  'Nagelstudio',
+  'Kosmetikstudio',
+  'Massage',
+  'Physiotherapie',
+  'Fitnessstudio',
+  'Optiker',
+  'Autowaschanlage',
+  'Konzert',
+  'Festival',
+  'Party',
+  'Markt',
+  'Ausstellung',
+  'Kino',
+  'Theater',
+  'Sportevent',
+] as const;
 
-export type MapIcon =
-  | 'scissors'
-  | 'shopping-cart'
-  | 'beer'
-  | 'coffee'
-  | 'utensils'
-  | 'music'
-  | 'ticket'
-  | 'wrench'
-  | 'map-pin';
+export type ShopCategory = (typeof shopCategoryLabels)[number];
+
+export const mapIconIds = [
+  'kleiderladen',
+  'schuhladen',
+  'schmuckladen',
+  'elektronikladen',
+  'buchhandlung',
+  'blumenladen',
+  'supermarkt',
+  'apotheke',
+  'heim-garten',
+  'tierbedarf',
+  'papeterie',
+  'brocki',
+  'kosmetik',
+  'getraenkeladen',
+  'restaurant',
+  'cafe',
+  'bar',
+  'pizzeria',
+  'baeckerei',
+  'konditorei',
+  'eisdiele',
+  'fast-food',
+  'coiffeur',
+  'nagelstudio',
+  'kosmetikstudio',
+  'massage',
+  'physiotherapie',
+  'fitnessstudio',
+  'optiker',
+  'autowaschanlage',
+  'konzert',
+  'festival',
+  'party',
+  'markt',
+  'ausstellung',
+  'kino',
+  'theater',
+  'sportevent',
+] as const;
+
+export type MapIcon = (typeof mapIconIds)[number];
 
 export type DayOpening = {
   isOpen: boolean;
