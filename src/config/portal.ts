@@ -1,6 +1,6 @@
 export type PortalRole = 'shop' | 'admin';
 
-const portalBaseUrl = 'https://onvaou.vercel.app';
+const portalBaseUrl = 'https://onvaou-blush.vercel.app';
 
 export const portalUrls = {
   base: portalBaseUrl,
@@ -13,3 +13,4 @@ export const isPortalConfigured = Boolean(portalBaseUrl);
 export const getPortalUrl = (role: PortalRole) => (role === 'admin' ? portalUrls.admin : portalUrls.shop);
 
 export const getPortalTitle = (role: PortalRole) => (role === 'admin' ? 'Admin Webportal' : 'Shop Webportal');
+
